@@ -2,7 +2,7 @@ require("./bot");
 const app = require("express")();
 const bodyParser = require("body-parser");
 const webhooks = require("node-webhooks");
-const mensagemController = require("./controller/mensagemController");
+//const mensagemController = require("./controller/mensagemController");
 const Bot = require("./bot");
 
 bot = {};
@@ -10,7 +10,7 @@ const PORT = 9000;
 
 app.use(bodyParser.json());
 
-app.use("/mensagem", mensagemController);
+// app.use("/mensagem", mensagemController);
 
 app.listen(PORT, (err)=>{
     if(!err){
@@ -22,11 +22,3 @@ app.listen(PORT, (err)=>{
         console.log("Erro: " + err);
     }
 });
-
-function salvarMensagemHook(){
-    return new webhooks({
-        db:{
-            "salvarMensagem": ["http://localhost:9000/historico-mensagem"]
-        }
-    });
-}
