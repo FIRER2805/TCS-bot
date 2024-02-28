@@ -1,24 +1,31 @@
-function iniciarBot(){
-    venom.create({session: "sessão-test"})
-    .then((client)=>{
-        start(client);
-    }).catch((err) => {
-        console.log(err);
-    })
+const venom = require("venom-bot");
+const MensagemHistoricoDto = require("./model/dto/MensagemHistoricoDto");
+
+class Bot{
+
+    hooks;
+
+    constructor(){
+        hooks = new webhooks({
+            db:{
+                "salvarMensagem": ["http://localhost:9000/historico-mensagem"]
+            }
+        });
+    }
+
+    async criarSessao(nomeSessao){
+        let client = await venom.create({session: nomeSessao})
+        await this.#iniciarBot(client).catch((err) => {
+            console.log(err);
+        })
+    }
+
+    #iniciarBot(client){
+        client.onMessage((message) => {
+            this.hooks.trigger("salvarMensagem",
+            new MensagemHistoricoDto(message.body, message.from));
+        });
+    }
 }
 
-function start(client){
-    client.onMessage((message) => {
-        if(message.body ==  "oi" && message.isGroupMsg == false){
-            client.sendText(message.from, RESPOSTA)
-            .then((result)=>{
-                console.log("Mensagem recebida de: " + message.from);
-                console.log("Conteudo da mensagem: " + message.body);
-            }).catch((err) => {
-                console.log(err);
-            })
-        }
-    })
-}
-
-module.exports = iniciarBot;
+module.exports = Bot;

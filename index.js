@@ -1,19 +1,32 @@
+require("./bot");
 const app = require("express")();
-const venom = require("venom-bot");
-const iniciarBot = require("./bot");
-const PORT = 9000;
-const RESPOSTA = "Olá, ésta é uma mensagem automática feita pelo venom bot";
+const bodyParser = require("body-parser");
+const webhooks = require("node-webhooks");
+const mensagemController = require("./controller/mensagemController");
+const Bot = require("./bot");
 
-app.get("/",(req, res)=>{
-    res.send("Hello World!");
-});
+bot = {};
+const PORT = 9000;
+
+app.use(bodyParser.json());
+
+app.use("/mensagem", mensagemController);
 
 app.listen(PORT, (err)=>{
     if(!err){
         console.log("Servidor ouvindo na porta " + PORT);
-        iniciarBot();
+        bot = new Bot();
+        bot.criarSessao("sessão-teste");
     }
     else {
         console.log("Erro: " + err);
     }
 });
+
+function salvarMensagemHook(){
+    return new webhooks({
+        db:{
+            "salvarMensagem": ["http://localhost:9000/historico-mensagem"]
+        }
+    });
+}
