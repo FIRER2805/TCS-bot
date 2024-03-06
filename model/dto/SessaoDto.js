@@ -11,3 +11,5 @@ class SessaoDto {
         this.inputPai = null;
     }
 }
+
+module.exports = SessaoDto;
