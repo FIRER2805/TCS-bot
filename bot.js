@@ -1,14 +1,13 @@
 const venom = require("venom-bot");
 const webhooks = require("node-webhooks");
 const MensagemHistoricoDto = require("./model/dto/MensagemHistoricoDto");
-const SessaoDto = require("./model/dto/SessaoDto");
+const Sessao = require("./model/dto/Entity/Sessao");
+const MensagemDto = require("./model/dto/MensagemDto");
 const axios = require("axios");
-const URL_PROXIMA_MENSAGEM = "localhost:8080/mensagem/proximo";
+const URL_PROXIMA_MENSAGEM = "http://localhost:8080/mensagem/proximo";
 
 class Bot{
 
-    // TODO criar hashmap para controle de sessão
-    // chave vai ser o objeto client logo quando ele é criado
     sessoes;
     hooks;
 
@@ -24,8 +23,7 @@ class Bot{
     async criarSessao(nomeSessao){
         try{
             let client = await venom.create({session: nomeSessao});
-            // idSetor = 1 para o padrão dos testes
-            let dadosSessao = new SessaoDto(1);
+            let dadosSessao = new Sessao(1,1);
             this.sessoes.set(client.session, dadosSessao);
             await this.#iniciarBot(client);
         }
@@ -37,20 +35,24 @@ class Bot{
     #iniciarBot(client){
         client.onMessage(async (message) => {
             if(message.body != undefined && !message.isGroupMsg){
-                /*TODO futuramente remover o salvamento da mensagem do bot 
-                e deixar na api*/
-                // salva mensagem no histórico
+                
+                let sessao = this.sessoes.get(client.session);
+                
+                let mensagemParametro = new MensagemDto();
+                mensagemParametro.idSetor = sessao.idSetor;
+                mensagemParametro.idUsuario = sessao.idUsuario;
+                mensagemParametro.numeroContato = message.from;
+                mensagemParametro.inputPai = message.body;
+                mensagemParametro.idMensagemPai = sessao.historicoContatos.get(message.from);
+                
+                let proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, mensagemParametro);
+                
+                sessao.historicoContatos.set(message.from,proximaMensagem.data.id);
+
+                console.log(sessao.historicoContatos.get(message.from));
+
                 let dado = new MensagemHistoricoDto(message.body, message.from);
                 this.hooks.trigger("salvarMensagem", dado);
-
-                // configura objeto da sessaoDto
-                let sessao = this.sessoes.get(client.session);
-                sessao.inputPai = message.body;
-
-                // envia requisição para receber proxima mensagem
-                let proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, sessao);
-
-                console.log(proximaMensagem);
             }
         });
     }
