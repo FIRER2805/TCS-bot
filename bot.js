@@ -34,25 +34,34 @@ class Bot{
 
     #iniciarBot(client){
         client.onMessage(async (message) => {
-            if(message.body != undefined && !message.isGroupMsg){
-                
+            if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
                 let sessao = this.sessoes.get(client.session);
                 
                 let mensagemParametro = new MensagemDto();
                 mensagemParametro.idSetor = sessao.idSetor;
-                mensagemParametro.idUsuario = sessao.idUsuario;
                 mensagemParametro.numeroContato = message.from;
                 mensagemParametro.inputPai = message.body;
+                mensagemParametro.idUsuario = sessao.idUsuario;
                 mensagemParametro.idMensagemPai = sessao.historicoContatos.get(message.from);
-                
-                let proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, mensagemParametro);
-                
-                sessao.historicoContatos.set(message.from,proximaMensagem.data.id);
 
-                console.log(sessao.historicoContatos.get(message.from));
+                console.log(mensagemParametro);
+                
+                let proximaMensagem;
 
-                let dado = new MensagemHistoricoDto(message.body, message.from);
+                try{
+                    proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, mensagemParametro);
+                    sessao.historicoContatos.set(message.from,proximaMensagem.data.id);
+                }
+                catch(err){
+                    console.log("erro: " + err);
+                }
+
+                // console.log(sessao.historicoContatos.get(message.from));
+
+                let dado = new MensagemHistoricoDto(message.body, message.from, sessao.idUsuario);
                 this.hooks.trigger("salvarMensagem", dado);
+
+                client.sendText(message.from,proximaMensagem.data.conteudo);
             }
         });
     }
