@@ -1,5 +1,11 @@
 # TCS-bot
 
+## API Externa
+
+Utilizamos o venom bot api para o envio de mensagens automáticas pelo whatsapp
+
+link do repositório do venom bot api: https://github.com/orkestral/venom
+
 ## Politica de privacidade
 
 Data de regimento: 
