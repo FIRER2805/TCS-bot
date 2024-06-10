@@ -1,12 +1,12 @@
 class Sessao {
     idSetor;
     idUsuario;
-    historicoContatos;
+    ultimoIdMensagem;
 
     constructor(idSetor, idUsuario){
         this.idSetor = idSetor;
         this.idUsuario = idUsuario;
-        this.historicoContatos = new Map();
+        this.ultimoIdMensagem = new Map();
     }
 }
 

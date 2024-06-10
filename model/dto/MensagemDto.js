@@ -1,8 +1,8 @@
 class MensagemDto{
+    idMensagemPai;
     idSetor;
     idUsuario;
     inputPai;
-    idMensagemPai;
     numeroContato;
 }
 

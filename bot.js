@@ -25,45 +25,43 @@ class Bot{
             let client = await venom.create({session: nomeSessao});
             let dadosSessao = new Sessao(1,1);
             this.sessoes.set(client.session, dadosSessao);
-            await this.#iniciarBot(client);
+            await this.#configurarBot(client);
         }
         catch(err){
             console.log(err);
         }
     }
 
-    #iniciarBot(client){
+    #configurarBot(client){
         client.onMessage(async (message) => {
             if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
                 let sessao = this.sessoes.get(client.session);
-                
-                let mensagemParametro = new MensagemDto();
-                mensagemParametro.idSetor = sessao.idSetor;
-                mensagemParametro.numeroContato = message.from;
-                mensagemParametro.inputPai = message.body;
-                mensagemParametro.idUsuario = sessao.idUsuario;
-                mensagemParametro.idMensagemPai = sessao.historicoContatos.get(message.from);
-
-                console.log(mensagemParametro);
-                
+                let mensagemParametro = this.#montarMensagemParametro(sessao, message);
                 let proximaMensagem;
-
                 try{
                     proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, mensagemParametro);
-                    sessao.historicoContatos.set(message.from,proximaMensagem.data.id);
+                    console.log(proximaMensagem);
+                    sessao.ultimoIdMensagem.set(message.from,proximaMensagem.data.id);
                 }
                 catch(err){
                     console.log("erro: " + err);
                 }
 
-                // console.log(sessao.historicoContatos.get(message.from));
-
                 let dado = new MensagemHistoricoDto(message.body, message.from, sessao.idUsuario);
                 this.hooks.trigger("salvarMensagem", dado);
-
                 client.sendText(message.from,proximaMensagem.data.conteudo);
             }
         });
+    }
+
+    #montarMensagemParametro(sessao, message){
+        let mensagemParametro = new MensagemDto();
+        mensagemParametro.idSetor = sessao.idSetor;
+        mensagemParametro.numeroContato = message.from;
+        mensagemParametro.inputPai = message.body;
+        mensagemParametro.idUsuario = sessao.idUsuario;
+        mensagemParametro.idMensagemPai = sessao.ultimoIdMensagem.get(message.from);
+        return mensagemParametro;
     }
 }
 
