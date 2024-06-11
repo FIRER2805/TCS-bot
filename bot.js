@@ -40,21 +40,20 @@ class Bot{
                 let proximaMensagem;
                 try{
                     proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, mensagemParametro);
-                    console.log(proximaMensagem.data.inputsFilhos);
                     sessao.ultimoIdMensagem.set(message.from,proximaMensagem.data.id);
                     sessao.ultimasOpcoes.set(message.from, proximaMensagem.data.inputsFilhos);
                 }
                 catch(err){
                     console.log("erro: " + err);
                 }
-
+    
                 let dado = new MensagemHistoricoDto(message.body, message.from, sessao.idUsuario);
                 this.hooks.trigger("salvarMensagem", dado);
                 let mensagemEnviar = proximaMensagem.data.conteudo;
                 let contador = 1;
                 if(proximaMensagem.data.inputsFilhos.length == 0){
-                    console.log("esta vazio");
                     sessao.ultimoIdMensagem.set(message.from, null);
+                    mensagemEnviar += "\nEsta conversa chegou ao fim";
                 }
                 proximaMensagem.data.inputsFilhos.forEach(element => {
                     mensagemEnviar += "\n"+ contador + "- " + element.conteudo;
@@ -69,7 +68,11 @@ class Bot{
         let mensagemParametro = new MensagemDto();
         mensagemParametro.idSetor = sessao.idSetor;
         mensagemParametro.numeroContato = message.from;
-        mensagemParametro.inputPai = message.body //sessao.ultimasOpcoes(message.from)[Number(message.body)];
+        if(isNaN(message.body) || sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] == undefined){
+            mensagemParametro.inputPai = "";
+        }else {
+            mensagemParametro.inputPai = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].conteudo;
+        }
         mensagemParametro.idUsuario = sessao.idUsuario;
         mensagemParametro.idMensagemPai = sessao.ultimoIdMensagem.get(message.from);
         return mensagemParametro;
