@@ -4,6 +4,7 @@ class MensagemDto{
     idUsuario;
     inputPai;
     numeroContato;
+    inputsFilhos;
 }
 
 module.exports = MensagemDto;
