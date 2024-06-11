@@ -4,9 +4,9 @@ class Sessao {
     ultimoIdMensagem;
     ultimasOpcoes;
 
-    constructor(idSetor, idUsuario){
-        this.idSetor = idSetor;
+    constructor(idUsuario){
         this.idUsuario = idUsuario;
+        this.idSetor = new Map();
         this.ultimoIdMensagem = new Map();
         this.ultimasOpcoes = new Map();
     }

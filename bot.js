@@ -5,6 +5,7 @@ const Sessao = require("./model/dto/Entity/Sessao");
 const MensagemDto = require("./model/dto/MensagemDto");
 const axios = require("axios");
 const URL_PROXIMA_MENSAGEM = "http://localhost:8080/mensagem/proximo";
+const URL_SELECIONAR_SETOR = "http://localhost:8080/mensagem/selecionarSetor";
 
 class Bot{
 
@@ -23,7 +24,7 @@ class Bot{
     async criarSessao(nomeSessao){
         try{
             let client = await venom.create({session: nomeSessao});
-            let dadosSessao = new Sessao(1,1);
+            let dadosSessao = new Sessao(1);
             this.sessoes.set(client.session, dadosSessao);
             await this.#configurarBot(client);
         }
@@ -36,6 +37,20 @@ class Bot{
         client.onMessage(async (message) => {
             if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
                 let sessao = this.sessoes.get(client.session);
+                if(sessao.idSetor.get(message.from) == undefined && (sessao.ultimasOpcoes.get(message.from) == undefined || sessao.ultimasOpcoes.get(message.from).length == 0)){
+                    let setores = await axios.post(URL_SELECIONAR_SETOR, { idUsuario: sessao.idUsuario });
+                    sessao.ultimasOpcoes.set(message.from, setores.data);
+                    let mensagemEnviar = "Antes de começar o atendimento, escolha o setor em que você deseja falar"
+                    let contador = 1
+                    setores.data.forEach(element => {
+                        mensagemEnviar += "\n"+contador+"- "+element.nome;
+                        contador++;
+                    })
+                    return client.sendText(message.from,mensagemEnviar);
+                } else if (sessao.idSetor.get(message.from) == undefined && (sessao.ultimasOpcoes.get(message.from) != undefined || sessao.ultimasOpcoes.get(message.from).length > 0)){
+                    let sessaoSelecionada = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].id;
+                    sessao.idSetor.set(message.from,sessaoSelecionada);
+                }
                 let mensagemParametro = this.#montarMensagemParametro(sessao, message);
                 let proximaMensagem;
                 try{
@@ -53,6 +68,8 @@ class Bot{
                 let contador = 1;
                 if(proximaMensagem.data.inputsFilhos.length == 0){
                     sessao.ultimoIdMensagem.set(message.from, null);
+                    sessao.ultimasOpcoes.set(message.from, undefined);
+                    sessao.idSetor.set(message.from, undefined);
                     mensagemEnviar += "\nEsta conversa chegou ao fim";
                 }
                 proximaMensagem.data.inputsFilhos.forEach(element => {
@@ -66,7 +83,7 @@ class Bot{
 
     #montarMensagemParametro(sessao, message){
         let mensagemParametro = new MensagemDto();
-        mensagemParametro.idSetor = sessao.idSetor;
+        mensagemParametro.idSetor = sessao.idSetor.get(message.from);
         mensagemParametro.numeroContato = message.from;
         if(isNaN(message.body) || sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] == undefined){
             mensagemParametro.inputPai = "";
