@@ -37,6 +37,7 @@ class Bot{
         client.onMessage(async (message) => {
             if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
                 let sessao = this.sessoes.get(client.session);
+                // seleção de setor
                 if(sessao.idSetor.get(message.from) == undefined && (sessao.ultimasOpcoes.get(message.from) == undefined || sessao.ultimasOpcoes.get(message.from).length == 0)){
                     let setores = await axios.post(URL_SELECIONAR_SETOR, { idUsuario: sessao.idUsuario });
                     sessao.ultimasOpcoes.set(message.from, setores.data);
@@ -48,8 +49,18 @@ class Bot{
                     })
                     return client.sendText(message.from,mensagemEnviar);
                 } else if (sessao.idSetor.get(message.from) == undefined && (sessao.ultimasOpcoes.get(message.from) != undefined || sessao.ultimasOpcoes.get(message.from).length > 0)){
-                    let sessaoSelecionada = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].id;
-                    sessao.idSetor.set(message.from,sessaoSelecionada);
+                    if(!isNaN(message.body) && sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] != undefined){
+                        let sessaoSelecionada = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].id;
+                        sessao.idSetor.set(message.from,sessaoSelecionada);
+                    } else {
+                        let mensagemEnviar = "Input incorreto!";
+                        let contador = 1
+                        sessao.ultimasOpcoes.get(message.from).forEach(element => {
+                            mensagemEnviar += "\n" + contador + "- " + element.nome;
+                            contador++;
+                        })
+                        return client.sendText(message.from,mensagemEnviar);
+                    }
                 }
                 let mensagemParametro = this.#montarMensagemParametro(sessao, message);
                 let proximaMensagem;
@@ -61,8 +72,14 @@ class Bot{
                 catch(err){
                     console.log("erro: " + err);
                 }
-    
-                let dado = new MensagemHistoricoDto(message.body, message.from, sessao.idUsuario);
+                let conteudoMensagemHistorico;
+                if(sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] != undefined){
+                    conteudoMensagemHistorico = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].conteudo
+                }
+                else {
+                    conteudoMensagemHistorico = message.body;
+                }
+                let dado = new MensagemHistoricoDto(conteudoMensagemHistorico, message.from, sessao.idUsuario);
                 this.hooks.trigger("salvarMensagem", dado);
                 let mensagemEnviar = proximaMensagem.data.conteudo;
                 let contador = 1;
