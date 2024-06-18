@@ -7,6 +7,7 @@ const axios = require("axios");
 const URL_PROXIMA_MENSAGEM = "http://localhost:8080/mensagem/proximo";
 const URL_SELECIONAR_SETOR = "http://localhost:8080/mensagem/selecionarSetor";
 const URL_CONTATO_AUTOMATIZADO = "http://localhost:8080/contatos/automatizado";
+const URL_ATIVAR_ATENDIMENTO_MANUAL = "http://localhost:8080/contatos/atendimentoManual";
 
 class Bot{
 
@@ -41,7 +42,8 @@ class Bot{
                 return;
             }
             if(message.body.toLowerCase() == "atendimento manual"){
-                return console.log("atendimento automático desativado");
+                await axios.post(URL_ATIVAR_ATENDIMENTO_MANUAL, {numero: message.from, automatizado: false});
+                return client.sendText(message.from, "solicitado o atendimento manual");
             }
             if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
                 let sessao = this.sessoes.get(client.session);
