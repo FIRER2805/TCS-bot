@@ -8,6 +8,7 @@ const URL_PROXIMA_MENSAGEM = "http://localhost:8080/mensagem/proximo";
 const URL_SELECIONAR_SETOR = "http://localhost:8080/mensagem/selecionarSetor";
 const URL_CONTATO_AUTOMATIZADO = "http://localhost:8080/contatos/automatizado";
 const URL_ATIVAR_ATENDIMENTO_MANUAL = "http://localhost:8080/contatos/atendimentoManual";
+const URL_CONTATOS_BASE = "http://localhost:8080/contatos"
 
 class Bot{
 
@@ -40,6 +41,10 @@ class Bot{
             let contatoRetornado = await axios.post(URL_CONTATO_AUTOMATIZADO, {numero: message.from});
             if(contatoRetornado.data.id != null && contatoRetornado.data.automatizado == false){
                 return;
+            }
+            else if (contatoRetornado.data.id == null){
+                let idUsuario = this.sessoes.get(client.session).idUsuario;
+                await axios.post(URL_CONTATOS_BASE, {idUsuario, numero: message.from, automatizado: true});
             }
             if(message.body.toLowerCase() == "atendimento manual"){
                 await axios.post(URL_ATIVAR_ATENDIMENTO_MANUAL, {numero: message.from, automatizado: false});
@@ -75,6 +80,7 @@ class Bot{
                 let mensagemParametro = this.#montarMensagemParametro(sessao, message);
                 let proximaMensagem;
                 try{
+                    console.log(mensagemParametro);
                     proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, mensagemParametro);
                     sessao.ultimoIdMensagem.set(message.from,proximaMensagem.data.id);
                     sessao.ultimasOpcoes.set(message.from, proximaMensagem.data.inputsFilhos);
