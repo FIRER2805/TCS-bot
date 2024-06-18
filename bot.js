@@ -6,6 +6,7 @@ const MensagemDto = require("./model/dto/MensagemDto");
 const axios = require("axios");
 const URL_PROXIMA_MENSAGEM = "http://localhost:8080/mensagem/proximo";
 const URL_SELECIONAR_SETOR = "http://localhost:8080/mensagem/selecionarSetor";
+const URL_CONTATO_AUTOMATIZADO = "http://localhost:8080/contatos/automatizado";
 
 class Bot{
 
@@ -35,6 +36,13 @@ class Bot{
 
     #configurarBot(client){
         client.onMessage(async (message) => {
+            let contatoRetornado = await axios.post(URL_CONTATO_AUTOMATIZADO, {numero: message.from});
+            if(contatoRetornado.data.id != null && contatoRetornado.data.automatizado == false){
+                return;
+            }
+            if(message.body.toLowerCase() == "atendimento manual"){
+                return console.log("atendimento automático desativado");
+            }
             if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
                 let sessao = this.sessoes.get(client.session);
                 // seleção de setor
