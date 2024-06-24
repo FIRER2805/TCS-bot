@@ -64,16 +64,22 @@ class Bot{
     #configurarBot(client){
         client.onMessage(async (message) => {
             let contatoRetornado = await axios.post(URL_CONTATO_AUTOMATIZADO, {numero: message.from});
+            // se o contato não estiver automatizado, não devera ser realizado o atendimento automático
             if(contatoRetornado.data.id != null && contatoRetornado.data.automatizado == false){
                 return;
             }
+            //caso o contato não esteja salvo, o contato será salvo
             else if (contatoRetornado.data.id == null){
                 let idUsuario = this.sessoes.get(client.session).idUsuario;
                 await axios.post(URL_CONTATOS_BASE, {idUsuario, numero: message.from, automatizado: true});
             }
+            /* 
+            caso seja solicitado o atendimento manual,
+            o atendimento sera cancelado e o contato sera desautomatizado 
+            */
             if(message.body.toLowerCase() == "atendimento manual"){
                 await axios.post(URL_ATIVAR_ATENDIMENTO_MANUAL, {numero: message.from, automatizado: false});
-                return client.sendText(message.from, "solicitado o atendimento manual");
+                return client.sendText(message.from, "[O atendimento manual foi solicitado]");
             }
             if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
                 let sessao = this.sessoes.get(client.session);
@@ -93,7 +99,7 @@ class Bot{
                         let sessaoSelecionada = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].id;
                         sessao.idSetor.set(message.from,sessaoSelecionada);
                     } else {
-                        let mensagemEnviar = "Input incorreto!";
+                        let mensagemEnviar = "Esta opção é invalida!\nestas são as opções válidas";
                         let contador = 1
                         sessao.ultimasOpcoes.get(message.from).forEach(element => {
                             mensagemEnviar += "\n" + contador + "- " + element.nome;
@@ -104,6 +110,7 @@ class Bot{
                 }
                 let mensagemParametro = this.#montarMensagemParametro(sessao, message);
                 let proximaMensagem;
+                // busca qual a proxima mensagem que deve ser enviada para o contato
                 try{
                     console.log(mensagemParametro);
                     proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, mensagemParametro);
@@ -114,21 +121,19 @@ class Bot{
                     console.log("erro: " + err);
                 }
                 let conteudoMensagemHistorico;
+                // salva a mensagem no histórico de mensagens caso o input seja válido
                 if(sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] != undefined){
                     conteudoMensagemHistorico = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].conteudo
+                    let dado = new MensagemHistoricoDto(conteudoMensagemHistorico, message.from, sessao.idUsuario);
+                    this.hooks.trigger("salvarMensagem", dado);
                 }
-                else {
-                    conteudoMensagemHistorico = message.body;
-                }
-                let dado = new MensagemHistoricoDto(conteudoMensagemHistorico, message.from, sessao.idUsuario);
-                this.hooks.trigger("salvarMensagem", dado);
                 let mensagemEnviar = proximaMensagem.data.conteudo;
                 let contador = 1;
                 if(proximaMensagem.data.inputsFilhos.length == 0){
                     sessao.ultimoIdMensagem.set(message.from, null);
                     sessao.ultimasOpcoes.set(message.from, undefined);
                     sessao.idSetor.set(message.from, undefined);
-                    mensagemEnviar += "\nEsta conversa chegou ao fim";
+                    mensagemEnviar += "\n\n[Fim do atendimento automático]";
                 }
                 proximaMensagem.data.inputsFilhos.forEach(element => {
                     mensagemEnviar += "\n"+ contador + "- " + element.conteudo;
