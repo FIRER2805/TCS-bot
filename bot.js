@@ -8,7 +8,7 @@ const URL_PROXIMA_MENSAGEM = "http://localhost:8080/mensagem/proximo";
 const URL_SELECIONAR_SETOR = "http://localhost:8080/mensagem/selecionarSetor";
 const URL_CONTATO_AUTOMATIZADO = "http://localhost:8080/contatos/automatizado";
 const URL_ATIVAR_ATENDIMENTO_MANUAL = "http://localhost:8080/contatos/atendimentoManual";
-const URL_CONTATOS_BASE = "http://localhost:8080/contatos"
+const URL_CONTATOS_BASE = "http://localhost:8080/contatos";
 
 class Bot{
 
@@ -82,6 +82,7 @@ class Bot{
                 return client.sendText(message.from, "[O atendimento manual foi solicitado]");
             }
             if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
+                let conteudoMensagemHistorico;
                 let sessao = this.sessoes.get(client.session);
                 // seleção de setor
                 if(sessao.idSetor.get(message.from) == undefined && (sessao.ultimasOpcoes.get(message.from) == undefined || sessao.ultimasOpcoes.get(message.from).length == 0)){
@@ -110,22 +111,21 @@ class Bot{
                 }
                 let mensagemParametro = this.#montarMensagemParametro(sessao, message);
                 let proximaMensagem;
+                // salva a mensagem no histórico de mensagens caso o input seja válido
+                console.log(sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].conteudo);
+                if(sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] != undefined){
+                    conteudoMensagemHistorico = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].conteudo
+                    let dado = new MensagemHistoricoDto(conteudoMensagemHistorico, message.from, sessao.idUsuario);
+                    this.hooks.trigger("salvarMensagem", dado);
+                }
                 // busca qual a proxima mensagem que deve ser enviada para o contato
                 try{
-                    console.log(mensagemParametro);
                     proximaMensagem = await axios.post(URL_PROXIMA_MENSAGEM, mensagemParametro);
                     sessao.ultimoIdMensagem.set(message.from,proximaMensagem.data.id);
                     sessao.ultimasOpcoes.set(message.from, proximaMensagem.data.inputsFilhos);
                 }
                 catch(err){
                     console.log("erro: " + err);
-                }
-                let conteudoMensagemHistorico;
-                // salva a mensagem no histórico de mensagens caso o input seja válido
-                if(sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] != undefined){
-                    conteudoMensagemHistorico = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].conteudo
-                    let dado = new MensagemHistoricoDto(conteudoMensagemHistorico, message.from, sessao.idUsuario);
-                    this.hooks.trigger("salvarMensagem", dado);
                 }
                 let mensagemEnviar = proximaMensagem.data.conteudo;
                 let contador = 1;
