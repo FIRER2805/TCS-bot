@@ -63,6 +63,7 @@ class Bot{
 
     #configurarBot(client){
         client.onMessage(async (message) => {
+            let sessao = this.sessoes.get(client.session);
             let contatoRetornado = await axios.post(URL_CONTATO_AUTOMATIZADO, {numero: message.from});
             // se o contato não estiver automatizado, não devera ser realizado o atendimento automático
             if(contatoRetornado.data.id != null && contatoRetornado.data.automatizado == false){
@@ -79,11 +80,12 @@ class Bot{
             */
             if(message.body.toLowerCase() == "atendimento manual"){
                 await axios.post(URL_ATIVAR_ATENDIMENTO_MANUAL, {numero: message.from, automatizado: false});
+                let dado = new MensagemHistoricoDto("atendimento manual", message.from, sessao.idUsuario);
+                this.hooks.trigger("salvarMensagem", dado);
                 return client.sendText(message.from, "[O atendimento manual foi solicitado]");
             }
             if(message.body != undefined && !message.isGroupMsg && message.from != "status@broadcast"){
                 let conteudoMensagemHistorico;
-                let sessao = this.sessoes.get(client.session);
                 // seleção de setor
                 if(sessao.idSetor.get(message.from) == undefined && (sessao.ultimasOpcoes.get(message.from) == undefined || sessao.ultimasOpcoes.get(message.from).length == 0)){
                     let setores = await axios.post(URL_SELECIONAR_SETOR, { idUsuario: sessao.idUsuario });
@@ -112,7 +114,6 @@ class Bot{
                 let mensagemParametro = this.#montarMensagemParametro(sessao, message);
                 let proximaMensagem;
                 // salva a mensagem no histórico de mensagens caso o input seja válido
-                console.log(sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].conteudo);
                 if(sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] != undefined){
                     conteudoMensagemHistorico = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].conteudo
                     let dado = new MensagemHistoricoDto(conteudoMensagemHistorico, message.from, sessao.idUsuario);
@@ -139,6 +140,7 @@ class Bot{
                     mensagemEnviar += "\n"+ contador + "- " + element.conteudo;
                     contador++;
                 });
+                mensagemEnviar += "\nPara solicitar atendimento manual digite: atendimento manual";
                 client.sendText(message.from,mensagemEnviar);
             }
         });
