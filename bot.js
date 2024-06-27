@@ -99,7 +99,7 @@ class Bot{
                     return client.sendText(message.from,mensagemEnviar);
                 } else if (sessao.idSetor.get(message.from) == undefined && (sessao.ultimasOpcoes.get(message.from) != undefined || sessao.ultimasOpcoes.get(message.from).length > 0)){
                     if(!isNaN(message.body) && sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1] != undefined){
-                        let setorSelecionado = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].id;
+                        let setorSelecionado = sessao.ultimasOpcoes.get(message.from)[Number(message.body) - 1].idSetor;
                         sessao.idSetor.set(message.from,setorSelecionado);
                         let dado = new MensagemHistoricoDto(setorSelecionado, message.from, sessao.idUsuario);
                         this.hooks.trigger("salvarMensagem", dado);
