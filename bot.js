@@ -52,7 +52,7 @@ class Bot{
               undefined,
               { logQR: false }
             );
-            let dadosSessao = new Sessao(1);
+            let dadosSessao = new Sessao(Number(nomeSessao));
             this.sessoes.set(client.session, dadosSessao);
             await this.#configurarBot(client);
         }
@@ -71,6 +71,7 @@ class Bot{
             }
             //caso o contato não esteja salvo, o contato será salvo
             else if (contatoRetornado.data.id == null){
+                console.log("idUsuario: " + this.sessoes.get(client.session).idUsuario);
                 let idUsuario = this.sessoes.get(client.session).idUsuario;
                 await axios.post(URL_CONTATOS_BASE, {idUsuario, numero: message.from, automatizado: true});
             }
